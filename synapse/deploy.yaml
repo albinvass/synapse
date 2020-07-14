@@ -1,0 +1,76 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: synapse
+spec:
+  selector:
+    matchLabels:
+      app: synapse
+  serviceName: "nginx"
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: synapse  # has to match .spec.selector.matchLabels
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: synapse
+        image: matrixdotorg/synapse:v1.17.0
+        ports:
+        - containerPort: 8008
+          name: synapse
+        volumeMounts:
+        - name: synapse-data
+          mountPath: /var/lib/synapse
+        - name: synapse-config
+          mountPath: /data/
+          readOnly: true
+      volumes:
+      - name: synapse-config
+        projected:
+          sources:
+          - secret:
+              name: synapse-homeserver-yaml
+          - secret:
+              name: synapse-signing-key
+          - secret:
+              name: synapse-log-config
+  volumeClaimTemplates:
+  - metadata:
+      name: synapse-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "local-path"
+      resources:
+        requests:
+          storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: synapse
+  labels:
+    app: synapse
+spec:
+  ports:
+  - port: 80
+    targetPort: 8008
+    name: synapse
+  selector:
+    app: synapse
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: nginx-ingress
+spec:
+  rules:
+  - host: vassast.com
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: synapse
+          servicePort: 80
