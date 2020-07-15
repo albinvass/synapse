@@ -7,7 +7,7 @@ spec:
   selector:
     matchLabels:
       app: synapse
-  serviceName: "nginx"
+  serviceName: "synapse"
   replicas: 1
   template:
     metadata:
@@ -64,10 +64,10 @@ spec:
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  name: nginx-ingress
+  name: traefik-ingress
 spec:
   rules:
-  - host: vassast.com
+  - host: matrix.vassast.com
     http:
       paths:
       - path: /
